@@ -1,4 +1,3 @@
-
 --[[
   AUTO CLAIM VOUCHER — SCAN MAP
   BY ALFIAN
