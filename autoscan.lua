@@ -38,7 +38,12 @@ local function applyAntiLag()
     end)
 end
 
-local TITIK1      = Vector3.new(9150.5,  5054.2, -21364.1)
+-- ══════════════════════════════
+-- KOORDINAT
+-- ══════════════════════════════
+-- Fase 1 — dari log baru t=0.05
+local TITIK1      = Vector3.new(9233.1,  5054.2, -21332.8)
+-- Fase 2 — summit dari log sebelumnya
 local SUMMIT_LAND = Vector3.new(9814.0,  2952.5, -21591.3)
 local SUMMIT_NEAR = Vector3.new(9874.0,  2951.0, -21571.6)
 
@@ -137,25 +142,25 @@ local function runSequence()
             setStatus("ERROR", "err"); running=false; return
         end
         local hum = char:FindFirstChildOfClass("Humanoid")
-
-        -- TP 1: Fase 2 (summit)
         if hum then hum.WalkSpeed = 0 end
+
+        -- TP 1: Summit (fase 2 dulu)
         hrp.CFrame = CFrame.new(SUMMIT_NEAR + Vector3.new(0,5,0))
         task.wait(0.35)
 
-        -- TP 2: Fase 1 (basecamp)
+        -- TP 2: Fase 1 — koordinat baru dari log
         hrp.CFrame = CFrame.new(TITIK1 + Vector3.new(0,5,0))
         task.wait(0.35)
 
-        -- TP 3: Fase 2 lagi (summit land + near)
+        -- TP 3: Summit lagi + fire
         hrp.CFrame = CFrame.new(SUMMIT_LAND + Vector3.new(0,5,0))
         task.wait(0.25)
         hrp.CFrame = CFrame.new(SUMMIT_NEAR + Vector3.new(0,5,0))
         task.wait(0.25)
 
-        -- fire prompt
         if hum then hum.WalkSpeed = 16 end
         task.wait(0.1)
+
         local result = findPrimary()
         if result then
             firePrompt(result.prompt, result.pos, hrp)
@@ -168,7 +173,7 @@ local function runSequence()
 end
 
 -- ══════════════════════════════
--- GUI — MINIMAL, HANYA START
+-- GUI
 -- ══════════════════════════════
 local PNL = Color3.fromRGB(14, 14, 14)
 local MID = Color3.fromRGB(22, 22, 22)
@@ -201,12 +206,10 @@ F.BackgroundColor3=PNL; F.BorderSizePixel=0
 F.Active=true; F.Draggable=true; F.ZIndex=10
 uic(F,8); usk(F,BRD,1)
 
--- top accent
 local TL=Instance.new("Frame",F)
 TL.Size=UDim2.new(1,-4,0,1); TL.Position=UDim2.new(0,2,0,0)
 TL.BackgroundColor3=SIL; TL.BorderSizePixel=0; TL.ZIndex=15; uic(TL,1)
 
--- TOPBAR
 local TB=Instance.new("Frame",F)
 TB.Size=UDim2.new(1,0,0,40); TB.BackgroundColor3=DEEP
 TB.BorderSizePixel=0; TB.ZIndex=11
@@ -243,7 +246,6 @@ XB.MouseButton1Click:Connect(function()
     task.delay(0.2,function() sg:Destroy() end)
 end)
 
--- STATUS DOT ROW
 local SR=Instance.new("Frame",F)
 SR.Size=UDim2.new(1,-24,0,22); SR.Position=UDim2.new(0,12,0,48)
 SR.BackgroundColor3=MID; SR.BorderSizePixel=0; SR.ZIndex=12
@@ -268,7 +270,6 @@ statusCB=function(msg,col)
     else SVl.TextColor3=WHT; SDot.BackgroundColor3=WHT end
 end
 
--- START BUTTON
 local StartBtn=Instance.new("TextButton",F)
 StartBtn.Size=UDim2.new(1,-24,0,36); StartBtn.Position=UDim2.new(0,12,0,78)
 StartBtn.BackgroundColor3=WHT; StartBtn.Text="[ START ]"
