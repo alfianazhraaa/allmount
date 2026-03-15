@@ -1,5 +1,5 @@
 --[[
-  MOUNT ZIHAN v2
+  MOUNT ZIHAN v3 — FIXED CLAIM POINT
   BY ALFIAN
 ]]
 
@@ -10,7 +10,7 @@ local player   = Players.LocalPlayer
 
 pcall(function()
     for _, g in ipairs(player.PlayerGui:GetChildren()) do
-        if g.Name == "ZihanV2" then g:Destroy() end
+        if g.Name == "ZihanV3" then g:Destroy() end
     end
 end)
 
@@ -39,13 +39,17 @@ local function applyAntiLag()
 end
 
 -- ══════════════════════════════
--- KOORDINAT
+-- KOORDINAT DARI ANALISIS LOG
 -- ══════════════════════════════
--- Fase 1 — dari log baru t=0.05
-local TITIK1      = Vector3.new(9233.1,  5054.2, -21332.8)
--- Fase 2 — summit dari log sebelumnya
-local SUMMIT_LAND = Vector3.new(9814.0,  2952.5, -21591.3)
-local SUMMIT_NEAR = Vector3.new(9874.0,  2951.0, -21571.6)
+-- Titik 1 — basecamp (fase 1)
+local T1 = Vector3.new(9233.1,  5054.2, -21332.8)
+-- Titik 2 — intermediate landing
+local T2 = Vector3.new(9814.0,  2951.7, -21591.3)
+-- Titik 3 — summit loop point
+local T3 = Vector3.new(9874.0,  2950.8, -21571.6)
+-- TITIK CLAIM SEBENARNYA dari log 2 t=5.87
+-- posisi tepat sebelum prompt berhasil
+local CLAIM = Vector3.new(10284.1, 3013.4, -21465.0)
 
 local running  = false
 local statusCB = nil
@@ -60,6 +64,7 @@ local function notif(t, m)
     end)
 end
 
+-- cari Primary prompt terdekat CLAIM point
 local function findPrimary()
     local best, bestDist = nil, math.huge
     for _, v in ipairs(workspace:GetDescendants()) do
@@ -76,28 +81,12 @@ local function findPrimary()
                         pos = pp and pp.Position
                     end
                     if pos then
-                        local d = (pos - SUMMIT_NEAR).Magnitude
-                        if d < bestDist then bestDist=d; best={prompt=v, pos=pos} end
+                        local d = (pos - CLAIM).Magnitude
+                        if d < bestDist then
+                            bestDist = d
+                            best = {prompt=v, pos=pos}
+                        end
                     end
-                end
-            end
-        end
-    end
-    if best then return best end
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v.Name == "Primary" and (v:IsA("BasePart") or v:IsA("Model")) then
-            local pos
-            if v:IsA("BasePart") then pos = v.Position
-            elseif v:IsA("Model") then
-                local pp = v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
-                pos = pp and pp.Position
-            end
-            if pos then
-                local d = (pos - SUMMIT_NEAR).Magnitude
-                if d < bestDist then
-                    bestDist = d
-                    local pr = v:FindFirstChildOfClass("ProximityPrompt")
-                    best = {prompt=pr, pos=pos}
                 end
             end
         end
@@ -105,26 +94,12 @@ local function findPrimary()
     return best
 end
 
-local function firePrompt(pr, objPos, hrp)
+local function tryFire(pr, hrp)
     if not pr then return false end
-    if objPos then
-        local dir = (hrp.Position - objPos)
-        local safePos = objPos + (dir.Magnitude > 0.1 and dir.Unit*7 or Vector3.new(0,0,7))
-        hrp.CFrame = CFrame.new(safePos + Vector3.new(0,3,0))
-        task.wait(0.2)
-    end
     for _ = 1, 3 do
         local ok = pcall(function() fireproximityprompt(pr) end)
         if ok then return true end
         task.wait(0.08)
-    end
-    if objPos then
-        local d = (objPos - hrp.Position)
-        if d.Magnitude > 0 then
-            hrp.CFrame = CFrame.new(hrp.Position + d.Unit * 3)
-        end
-        task.wait(0.15)
-        pcall(function() fireproximityprompt(pr) end)
     end
     return false
 end
@@ -132,9 +107,10 @@ end
 local function runSequence()
     if running then return end
     running = true
+
     task.spawn(function()
         setStatus("...", "wait")
-        task.wait(0.15)
+        task.wait(0.12)
 
         local char = player.Character or player.CharacterAdded:Wait()
         local hrp  = char:WaitForChild("HumanoidRootPart", 5)
@@ -144,26 +120,57 @@ local function runSequence()
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = 0 end
 
-        -- TP 1: Summit (fase 2 dulu)
-        hrp.CFrame = CFrame.new(SUMMIT_NEAR + Vector3.new(0,5,0))
-        task.wait(0.35)
+        -- TP 1: summit T3 (sama seperti sebelumnya)
+        hrp.CFrame = CFrame.new(T3 + Vector3.new(0,5,0))
+        task.wait(0.3)
 
-        -- TP 2: Fase 1 — koordinat baru dari log
-        hrp.CFrame = CFrame.new(TITIK1 + Vector3.new(0,5,0))
-        task.wait(0.35)
+        -- TP 2: basecamp T1
+        hrp.CFrame = CFrame.new(T1 + Vector3.new(0,5,0))
+        task.wait(0.3)
 
-        -- TP 3: Summit lagi + fire
-        hrp.CFrame = CFrame.new(SUMMIT_LAND + Vector3.new(0,5,0))
+        -- TP 3: intermediate T2
+        hrp.CFrame = CFrame.new(T2 + Vector3.new(0,5,0))
         task.wait(0.25)
-        hrp.CFrame = CFrame.new(SUMMIT_NEAR + Vector3.new(0,5,0))
-        task.wait(0.25)
+
+        -- TP 4: titik claim sebenarnya (dari log 2)
+        hrp.CFrame = CFrame.new(CLAIM + Vector3.new(0,5,0))
+        task.wait(0.3)
 
         if hum then hum.WalkSpeed = 16 end
         task.wait(0.1)
 
+        -- scan Primary terdekat CLAIM
         local result = findPrimary()
+
         if result then
-            firePrompt(result.prompt, result.pos, hrp)
+            -- posisi 6 stud dari objek
+            local dir = (hrp.Position - result.pos)
+            local safePos = result.pos + (dir.Magnitude > 0.1 and dir.Unit*6 or Vector3.new(0,0,6))
+            hrp.CFrame = CFrame.new(safePos + Vector3.new(0,3,0))
+            task.wait(0.2)
+
+            -- jump sambil fire — sesuai log 2 t=6.04 JUMP lalu t=6.08 PROMPT
+            if hum then hum.Jump = true end
+            task.wait(0.1)
+            tryFire(result.prompt, hrp)
+
+            -- retry sekali lagi dari posisi CLAIM langsung
+            if not tryFire(result.prompt, hrp) then
+                hrp.CFrame = CFrame.new(CLAIM + Vector3.new(0,3,0))
+                task.wait(0.15)
+                if hum then hum.Jump = true end
+                task.wait(0.08)
+                tryFire(result.prompt, hrp)
+            end
+        else
+            -- fallback: pindah tepat ke CLAIM + jump
+            hrp.CFrame = CFrame.new(CLAIM + Vector3.new(0,3,0))
+            task.wait(0.2)
+            if hum then hum.Jump = true end
+            task.wait(0.1)
+            -- scan ulang setelah jump
+            result = findPrimary()
+            if result then tryFire(result.prompt, hrp) end
         end
 
         setStatus("READY", "done")
@@ -173,7 +180,7 @@ local function runSequence()
 end
 
 -- ══════════════════════════════
--- GUI
+-- GUI — MINIMAL
 -- ══════════════════════════════
 local PNL = Color3.fromRGB(14, 14, 14)
 local MID = Color3.fromRGB(22, 22, 22)
@@ -195,7 +202,7 @@ local function usk(p,c,t)
 end
 
 local sg=Instance.new("ScreenGui")
-sg.Name="ZihanV2"; sg.ResetOnSpawn=false
+sg.Name="ZihanV3"; sg.ResetOnSpawn=false
 sg.DisplayOrder=9999; sg.IgnoreGuiInset=true
 sg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 sg.Parent=player.PlayerGui
@@ -223,7 +230,7 @@ tbB.BackgroundColor3=BRD; tbB.BorderSizePixel=0; tbB.ZIndex=12
 
 local TTi=Instance.new("TextLabel",TB)
 TTi.Size=UDim2.new(1,-46,0,16); TTi.Position=UDim2.new(0,12,0,6)
-TTi.BackgroundTransparency=1; TTi.Text="MOUNT ZIHAN v2"
+TTi.BackgroundTransparency=1; TTi.Text="MOUNT ZIHAN v3"
 TTi.TextColor3=WHT; TTi.Font=Enum.Font.GothamBold
 TTi.TextSize=11; TTi.TextXAlignment=Enum.TextXAlignment.Left; TTi.ZIndex=13
 
@@ -316,4 +323,4 @@ task.spawn(function()
     task.wait(0.5); applyAntiLag()
 end)
 
-print("Mount Zihan v2 | By Alfian | F9 toggle")
+print("Mount Zihan v3 | By Alfian | F9 toggle")
