@@ -1,4 +1,4 @@
-w--[[
+[[
   AUTO CLAIM VOUCHER — SCAN MAP
   BY ALFIAN
   Tidak pakai koordinat hardcode —
